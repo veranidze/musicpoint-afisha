@@ -2,255 +2,405 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Админка — Music Point</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Point - Афиша</title>
+    
+    <!-- Подключаем Tailwind CSS для стилей -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Подключаем иконки (для красоты) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Шрифты Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { background: #f3f4f6; color: #22223b; font-family: 'Inter', sans-serif; }
-        .glass-effect { background: rgba(255,255,255,0.7); backdrop-filter: blur(6px); border: 1px solid #e5e7eb; }
-        .dropzone { border: 2px dashed #a5b4fc; background: #eef2ff; color: #6366f1; transition: border-color 0.2s; }
-        .dropzone.dragover { border-color: #6366f1; background: #e0e7ff; }
-        .loader { border: 4px solid #f3f4f6; border-top: 4px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 8px; color: white; font-weight: bold; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
-        .toast.show { opacity: 1; visibility: visible; }
-        .toast.success { background-color: #22c55e; }
-        .toast.error { background-color: #ef4444; }
-    </style>
-</head>
-<body class="min-h-screen">
-    <div class="max-w-3xl mx-auto py-10 px-4">
-        <h1 class="text-3xl font-bold mb-8 text-center">Администрирование событий</h1>
-        <form id="event-form" class="glass-effect p-6 rounded-xl mb-8">
-            <input type="hidden" id="event-id">
-            <div class="mb-4">
-                <label class="block mb-1 font-semibold">Название</label>
-                <input id="title" type="text" class="w-full p-2 rounded bg-white border border-gray-300" required>
-            </div>
-            <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label class="block mb-1 font-semibold">Жанр</label><input id="genre" type="text" class="w-full p-2 rounded bg-white border" required></div>
-                <div><label class="block mb-1 font-semibold">Дата</label><input id="date" type="date" class="w-full p-2 rounded bg-white border" required></div>
-                <div><label class="block mb-1 font-semibold">Время</label><input id="time" type="text" placeholder="20:00" class="w-full p-2 rounded bg-white border" required></div>
-            </div>
-            <div class="mb-4"><label class="block mb-1 font-semibold">Описание</label><textarea id="fullDescription" class="w-full p-2 rounded bg-white border" rows="3"></textarea></div>
-            <div class="mb-4">
-                <label class="block mb-1 font-semibold">Изображения (первое будет главным)</label>
-                <div id="dropzone" class="dropzone flex flex-col items-center justify-center p-4 rounded cursor-pointer mb-2">
-                    <span id="dropzone-text">Перетащите файлы сюда или <span class="underline text-indigo-600 cursor-pointer" id="upload-btn">выберите</span></span>
-                </div>
-                <input id="imageFiles" type="file" accept="image/*" class="hidden" multiple>
-                <div id="gallery-preview" class="flex flex-wrap gap-4 mt-4"></div>
-            </div>
-            <div class="flex items-center">
-                <button type="submit" id="submit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded mt-2 flex items-center">
-                    <span id="submit-btn-text">Сохранить</span>
-                    <div id="submit-loader" class="loader ml-2 hidden"></div>
-                </button>
-                <button type="button" id="cancel-edit" class="ml-4 text-gray-500 hover:text-indigo-700">Отмена</button>
-            </div>
-        </form>
-        <div id="events-list"><div class="text-center text-gray-400 py-10">Загрузка событий...</div></div>
-    </div>
-    <div id="toast" class="toast"></div>
-
-    <script>
-        // --- Настройки ---
-        const API_BASE_URL = 'http://16.170.141.43:3000';
-
-        // --- DOM Элементы ---
-        const form = document.getElementById('event-form');
-        const eventsList = document.getElementById('events-list');
-        const cancelEditBtn = document.getElementById('cancel-edit');
-        const dropzone = document.getElementById('dropzone');
-        const imageFilesInput = document.getElementById('imageFiles');
-        const galleryPreview = document.getElementById('gallery-preview');
-        const toast = document.getElementById('toast');
-        const submitBtn = document.getElementById('submit-btn');
-        const submitBtnText = document.getElementById('submit-btn-text');
-        const submitLoader = document.getElementById('submit-loader');
-
-        let existingImageUrls = []; // URL уже загруженных картинок при редактировании
-        let filesToUpload = []; // Новые файлы для загрузки
-
-        // --- UI ---
-        function showToast(message, type = 'success') {
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => { toast.className = 'toast'; }, 3000);
+        /* Базовые стили и анимированный фон */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+            overflow-x: hidden;
         }
-        function setLoading(isLoading) {
-            submitBtn.disabled = isLoading;
-            submitBtnText.style.display = isLoading ? 'none' : 'block';
-            submitLoader.style.display = isLoading ? 'block' : 'none';
+        body.modal-open {
+            overflow: hidden; /* Запрещаем прокрутку фона, когда открыто модальное окно */
         }
 
-        // --- Управление изображениями ---
-        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-        dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
-        dropzone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-        document.getElementById('upload-btn').onclick = () => imageFilesInput.click();
-        imageFilesInput.onchange = () => {
-            if (imageFilesInput.files.length) {
-                handleFiles(imageFilesInput.files);
-                imageFilesInput.value = '';
-            }
-        };
-
-        function handleFiles(files) {
-            filesToUpload.push(...Array.from(files));
-            renderGalleryPreview();
+        .animated-gradient {
+            background: linear-gradient(-45deg, #111827, #1f2937, #374151, #4b5563);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
 
-        function renderGalleryPreview() {
-            galleryPreview.innerHTML = '';
-            // Рендер существующих URL
-            existingImageUrls.forEach((url, idx) => {
-                const div = document.createElement('div');
-                div.className = 'relative';
-                div.innerHTML = `<img src="${API_BASE_URL}${url}" class="w-24 h-16 object-cover rounded shadow border bg-gray-100" /><button type="button" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs remove-existing" data-idx="${idx}">&times;</button>`;
-                galleryPreview.appendChild(div);
-            });
-            // Рендер новых файлов
-            filesToUpload.forEach((file, idx) => {
-                const div = document.createElement('div');
-                div.className = 'relative';
-                div.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-24 h-16 object-cover rounded shadow border-2 border-indigo-400" /><button type="button" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs remove-new" data-idx="${idx}">&times;</button>`;
-                galleryPreview.appendChild(div);
-            });
-
-            galleryPreview.querySelectorAll('.remove-existing').forEach(btn => {
-                btn.onclick = () => { existingImageUrls.splice(+btn.dataset.idx, 1); renderGalleryPreview(); };
-            });
-            galleryPreview.querySelectorAll('.remove-new').forEach(btn => {
-                btn.onclick = () => { filesToUpload.splice(+btn.dataset.idx, 1); renderGalleryPreview(); };
-            });
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        // --- Форматирование даты ---
-        const formatDateForDisplay = (dateStr) => {
-            if (!dateStr) return '';
-            const [yyyy, mm, dd] = dateStr.split('T')[0].split('-');
-            return `${dd}.${mm}.${yyyy}`;
-        };
-
-        // --- CRUD ---
-        async function fetchEvents() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/events`);
-                if (!response.ok) throw new Error('Ошибка сети');
-                const events = await response.json();
-                renderEvents(events);
-            } catch (error) {
-                console.error('Ошибка загрузки событий:', error);
-                showToast('Ошибка загрузки событий', 'error');
-            }
-        }
-
-        function renderEvents(events) {
-            eventsList.innerHTML = '';
-            if (!events.length) {
-                eventsList.innerHTML = '<div class="text-center text-gray-400 py-10">Событий нет. Создайте первое!</div>';
-                return;
-            }
-            events.forEach(event => {
-                const div = document.createElement('div');
-                const imageUrl = event.gallery && event.gallery.length > 0 ? `${API_BASE_URL}${event.gallery[0]}` : 'https://placehold.co/128x80/e0e7ff/4f46e5?text=Img';
-                div.className = 'glass-effect mb-4 p-4 rounded-lg flex flex-col sm:flex-row items-center gap-4';
-                div.innerHTML = `
-                    <img src="${imageUrl}" alt="" class="w-32 h-20 object-cover rounded shadow border bg-gray-100">
-                    <div class="flex-1 text-center sm:text-left">
-                        <div class="font-bold text-lg">${event.title}</div>
-                        <div class="text-sm text-indigo-600">${event.genre} — ${formatDateForDisplay(event.date)} / ${event.time}</div>
-                    </div>
-                    <div class="flex flex-col gap-2 w-full sm:w-auto">
-                        <button class="edit-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded w-full">Редактировать</button>
-                        <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded w-full">Удалить</button>
-                    </div>`;
-                div.querySelector('.edit-btn').addEventListener('click', () => editEvent(event));
-                div.querySelector('.delete-btn').addEventListener('click', () => deleteEvent(event.id));
-                eventsList.appendChild(div);
-            });
-        }
-
-        function resetForm() {
-            form.reset();
-            document.getElementById('event-id').value = '';
-            filesToUpload = [];
-            existingImageUrls = [];
-            renderGalleryPreview();
-        }
-
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            setLoading(true);
-
-            const id = document.getElementById('event-id').value;
-            const url = id ? `${API_BASE_URL}/api/events/${id}` : `${API_BASE_URL}/api/events`;
-            const method = id ? 'PUT' : 'POST';
-
-            // Используем FormData для отправки файлов и текста вместе
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('genre', document.getElementById('genre').value);
-            formData.append('date', document.getElementById('date').value);
-            formData.append('time', document.getElementById('time').value);
-            formData.append('fullDescription', document.getElementById('fullDescription').value);
-            
-            // Добавляем новые файлы для загрузки
-            filesToUpload.forEach(file => formData.append('gallery', file));
-            // Добавляем существующие URL
-            existingImageUrls.forEach(url => formData.append('existingImages', url));
-
-            try {
-                const response = await fetch(url, { method: method, body: formData });
-                if (!response.ok) throw new Error('Ошибка сервера');
-                showToast(id ? 'Событие обновлено!' : 'Событие создано!');
-                resetForm();
-                fetchEvents();
-            } catch (error) {
-                showToast('Ошибка сохранения', 'error');
-                console.error('Ошибка:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        function editEvent(event) {
-            resetForm();
-            document.getElementById('event-id').value = event.id;
-            document.getElementById('title').value = event.title;
-            document.getElementById('genre').value = event.genre;
-            document.getElementById('date').value = event.date.split('T')[0]; // Форматируем дату для input
-            document.getElementById('time').value = event.time;
-            document.getElementById('fullDescription').value = event.fullDescription;
-            
-            existingImageUrls = event.gallery || [];
-            renderGalleryPreview();
-            window.scrollTo(0, 0);
-        }
-
-        async function deleteEvent(id) {
-            if (confirm(`Удалить это событие?`)) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/events/${id}`, { method: 'DELETE' });
-                    if (!response.ok) throw new Error('Ошибка удаления');
-                    showToast('Событие удалено.');
-                    fetchEvents();
-                } catch (error) {
-                    showToast('Ошибка удаления', 'error');
-                    console.error('Ошибка:', error);
-                }
-            }
+        /* Стиль для эффекта "стекла" */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        cancelEditBtn.onclick = resetForm;
+        /* Анимации для модального окна */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 0.5; }
+        }
+        @keyframes slideInUp {
+            from { transform: translateY(30px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .modal-overlay {
+            display: none; /* Модальное окно скрыто по умолчанию */
+        }
+        .modal-overlay.active {
+            display: flex; /* Показываем, когда активен */
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content {
+            animation: slideInUp 0.3s ease-out;
+        }
 
-        // --- Initial Load ---
-        fetchEvents();
+        /* Анимация для смены слайдов */
+        @keyframes slideFade {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+        .slide-animate {
+            animation: slideFade 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Фоновые слои вне основного контейнера -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div 
+            class="w-full h-full absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style="background-image: url('back4.jpg'); z-index: 0;">
+        </div>
+        <div 
+            class="w-full h-full absolute inset-0 bg-black"
+            style="z-index: 1; opacity: 0.75;">
+        </div>
+    </div>
+    <div class="animated-gradient pointer-events-none"></div>
+    <!-- Контент теперь обычный, скроллируемый -->
+    <div class="relative z-10 container mx-auto px-4">
+        <header class="text-center py-16 px-4 flex flex-col items-center">
+            <img src="logo-music-point.png" alt="Music Point Logo" class="w-32 h-32 mb-6 rounded-full shadow-lg border-4 border-white/20 bg-white/10 object-contain" />
+            <h1 class="text-3xl font-bold text-white mb-2">Концертный зал «Магнолия»</h1>
+            <p class="text-lg text-indigo-300 mb-2">ул. Шерифа Химшиашвили 4</p>
+        </header>
+        <main>
+            <!-- Контейнер для карточек событий будет заполнен с помощью JavaScript -->
+            <div id="event-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            </div>
+            <div class="flex justify-center mt-8">
+                <button id="show-more-btn" class="bg-gray-800 text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-700 transition-colors duration-300">
+                    Более ранние
+                </button>
+            </div>
+        </main>
+        <footer class="text-center py-10 mt-16 border-t border-gray-700">
+            <p class="text-gray-400">&copy; 2025 Music Point. Все права защищены.</p>
+            <p class="text-gray-500 text-sm">г. Город, ул. Музыкальная, д. 1</p>
+        </footer>
+    </div>
+    
+    <!-- HTML-структура для модального окна -->
+    <div id="modal-overlay" class="modal-overlay fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 p-4">
+        <div id="modal-content" class="modal-content glass-effect w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-y-auto">
+            <div class="relative h-96 w-full flex-shrink-0">
+                <img id="modal-image" class="w-full h-full object-cover" src="" alt="" />
+                <button id="modal-close-button" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center text-2xl hover:bg-opacity-75 transition-opacity z-20">&times;</button>
+                
+                <div id="modal-slider-nav" class="hidden">
+                    <button id="modal-prev-button" class="absolute top-1/2 left-4 -translate-y-1/2 text-white bg-black bg-opacity-40 rounded-full w-10 h-10 flex items-center justify-center text-xl hover:bg-opacity-60 transition-all z-20">
+                        &#10094;
+                    </button>
+                    <button id="modal-next-button" class="absolute top-1/2 right-4 -translate-y-1/2 text-white bg-black bg-opacity-40 rounded-full w-10 h-10 flex items-center justify-center text-xl hover:bg-opacity-60 transition-all z-20">
+                        &#10095;
+                    </button>
+                    <div id="modal-dots-container" class="absolute bottom-4 w-full flex justify-center space-x-2 z-20">
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <h2 id="modal-title" class="text-4xl font-bold text-white mb-4"></h2>
+                <p id="modal-description" class="text-gray-300 mb-8"></p>
+
+                <h3 class="text-2xl font-bold text-white mb-4">Связаться</h3>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <a id="modal-telegram" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"><i class="fab fa-telegram-plane mr-2"></i> Telegram</a>
+                    <a id="modal-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"><i class="fab fa-whatsapp mr-2"></i> WhatsApp</a>
+                    <a id="modal-instagram" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors flex items-center justify-center"><i class="fab fa-instagram mr-2"></i> Instagram</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Данные ---
+            const mockEvents = [
+                // Более ранние события (добавьте свои реальные данные при необходимости)
+                {
+                    id: 5,
+                    title: 'Spring Jazz Evening',
+                    genre: 'Jazz',
+                    date: '10 мая 2025',
+                    time: '19:00',
+                    imageUrl: 'https://placehold.co/600x400/2563eb/ffffff?text=Spring+Jazz+Evening&font=inter',
+                    fullDescription: 'Вечер живого джаза с участием лучших музыкантов города. Насладитесь атмосферой весны и отличной музыкой!',
+                    gallery: [
+                        'https://placehold.co/800x600/2563eb/ffffff?text=Gallery+1&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 6,
+                    title: 'Rock Legends Tribute',
+                    genre: 'Rock',
+                    date: '15 апреля 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/ef4444/ffffff?text=Rock+Legends+Tribute&font=inter',
+                    fullDescription: 'Трибьют-шоу легендарных рок-групп. Лучшие хиты прошлого в исполнении молодых талантов.',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 7,
+                    title: 'Весенний акустический вечер',
+                    genre: 'Acoustic',
+                    date: '28 марта 2025',
+                    time: '18:30',
+                    imageUrl: 'https://placehold.co/600x400/22d3ee/ffffff?text=Весенний+акустический+вечер&font=inter',
+                    fullDescription: 'Тёплый акустический концерт с авторскими песнями и уютной атмосферой.',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                // Основные 4 события
+                {
+                    id: 1,
+                    title: 'The Cosmic Keys: An Interstellar Journey Through Sound',
+                    genre: 'Psychedelic Rock',
+                    date: '30 июля 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/9333ea/ffffff?text=The+Cosmic+Keys&font=inter',
+                    fullDescription: 'The Cosmic Keys - это квартет, исследующий границы современного рока. На этом концерте вы услышите как новые композиции, так и проверенные временем хиты. Специальные визуальные эффекты, созданные в реальном времени, превратят выступление в незабываемый аудиовизуальный опыт. Не пропустите главное музыкальное событие лета!',
+                    gallery: [
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+1&font=inter',
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+2&font=inter',
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+3&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 2,
+                    title: 'Acoustic Echoes',
+                    genre: 'Unplugged Night',
+                    date: '15 августа 2025',
+                    time: '21:00',
+                    imageUrl: 'https://placehold.co/600x400/10b981/ffffff?text=Acoustic+Echoes&font=inter',
+                    fullDescription: 'Acoustic Echoes - это серия уникальных концертов, где нет места фонограммам и спецэффектам. Только голос, гитара и ваши эмоции. В программе вечера - известные баллады, авторские песни и неожиданные кавер-версии. Уютная атмосфера и живое общение с артистами гарантированы.',
+                    gallery: [
+                        'https://placehold.co/800x600/10b981/ffffff?text=Gallery+1&font=inter',
+                        'https://placehold.co/800x600/10b981/ffffff?text=Gallery+2&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 3,
+                    title: 'Synthwave Surfers',
+                    genre: 'Retro Future Tour',
+                    date: '2 сентября 2025',
+                    time: '22:00',
+                    imageUrl: 'https://placehold.co/600x400/ec4899/ffffff?text=Synthwave+Surfers&font=inter',
+                    fullDescription: 'Synthwave Surfers возвращаются с новым шоу в рамках своего тура "Retro Future". Вас ждут все главные хиты, а также треки с грядущего альбома. Лазерное шоу, дым-машины и атмосфера культовых фильмов прошлого перенесут вас в другую реальность. Дресс-код в стиле 80-х приветствуется!',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 4,
+                    title: 'Джазовые импровизации',
+                    genre: 'Modern Jazz',
+                    date: '20 сентября 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/f59e0b/ffffff?text=Джаз&font=inter',
+                    fullDescription: 'Каждый вечер джазовых импровизаций уникален. Музыканты встречаются на сцене, чтобы создать музыку здесь и сейчас, без репетиций и партитур. Это чистый диалог инструментов и душ, полный страсти и мастерства. В составе - звезды местной джазовой сцены. Приходите, чтобы стать свидетелем рождения музыки.',
+                    gallery: [
+                        'https://placehold.co/800x600/f59e0b/ffffff?text=Gallery+1&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                }
+            ];
+
+            // --- Сортировка событий по дате (от новых к старым) ---
+            function parseDate(str) {
+                const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+                const [day, month, year] = str.split(' ');
+                return new Date(+year, months.indexOf(month), +day);
+            }
+            mockEvents.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+
+            // --- Пагинация ---
+            const EVENTS_PER_PAGE = 4;
+            let currentPage = 1;
+
+            const eventListContainer = document.getElementById('event-list');
+            const showMoreBtn = document.getElementById('show-more-btn');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalCloseButton = document.getElementById('modal-close-button');
+            const modalContent = document.getElementById('modal-content');
+
+            function renderEventsPage() {
+                eventListContainer.innerHTML = '';
+                const eventsToShow = mockEvents.slice(0, currentPage * EVENTS_PER_PAGE);
+                eventsToShow.forEach(event => {
+                    const card = document.createElement('div');
+                    card.className = 'glass-effect rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300 ease-in-out group flex flex-col';
+                    card.innerHTML = `
+                        <div class="relative">
+                            <img class="w-full h-56 object-cover" src="${event.imageUrl}" alt="Афиша для ${event.title}" />
+                            <div class="absolute top-0 right-0 bg-black bg-opacity-50 text-white text-sm font-bold px-3 py-1 m-2 rounded-full">${event.genre}</div>
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <h3 class="text-2xl font-bold text-white mb-2">${event.title}</h3>
+                            <div class="flex items-center text-indigo-300 mb-2">
+                                <i class="far fa-calendar-alt mr-2"></i>
+                                <p>${event.date} / ${event.time}</p>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-4 flex-grow h-20">${truncateText(event.fullDescription, 110)}</p>
+                            <button class="details-button w-full mt-auto bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-300 transform group-hover:scale-105">
+                                Подробнее
+                            </button>
+                        </div>
+                    `;
+                    card.querySelector('.details-button').addEventListener('click', () => openModal(event));
+                    eventListContainer.appendChild(card);
+                });
+
+                // Показывать/скрывать кнопку
+                if (mockEvents.length > currentPage * EVENTS_PER_PAGE) {
+                    showMoreBtn.style.display = 'block';
+                } else {
+                    showMoreBtn.style.display = 'none';
+                }
+            }
+
+            showMoreBtn.addEventListener('click', () => {
+                currentPage++;
+                renderEventsPage();
+            });
+
+            // --- Вспомогательные функции ---
+            const truncateText = (text, maxLength) => {
+                if (text.length <= maxLength) return text;
+                const trimmedString = text.substring(0, maxLength);
+                return trimmedString.substring(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" "))) + '...';
+            };
+
+            // --- Логика модального окна ---
+            let currentEvent = null;
+            let currentSlideIndex = 0;
+
+            const openModal = (event) => {
+                currentEvent = event;
+                currentSlideIndex = 0;
+                
+                // Заполнение контента
+                document.getElementById('modal-title').textContent = event.title;
+                document.getElementById('modal-description').textContent = event.fullDescription;
+                document.getElementById('modal-telegram').href = event.socials.telegram;
+                document.getElementById('modal-whatsapp').href = event.socials.whatsapp;
+                document.getElementById('modal-instagram').href = event.socials.instagram;
+
+                updateSlider();
+
+                // Показываем окно
+                modalOverlay.classList.add('active');
+                document.body.classList.add('modal-open');
+            };
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            };
+
+            const updateSlider = () => {
+                const hasGallery = currentEvent.gallery && currentEvent.gallery.length > 0;
+                const canSlide = hasGallery && currentEvent.gallery.length > 1;
+
+                const imageToShow = hasGallery ? currentEvent.gallery[currentSlideIndex] : currentEvent.imageUrl;
+                const modalImage = document.getElementById('modal-image');
+                modalImage.src = imageToShow;
+                modalImage.classList.add('slide-animate');
+                modalImage.addEventListener('animationend', () => modalImage.classList.remove('slide-animate'), {once: true});
+
+
+                const sliderNav = document.getElementById('modal-slider-nav');
+                const dotsContainer = document.getElementById('modal-dots-container');
+                
+                if(canSlide) {
+                    sliderNav.classList.remove('hidden');
+                    dotsContainer.innerHTML = '';
+                    currentEvent.gallery.forEach((_, index) => {
+                        const dot = document.createElement('div');
+                        dot.className = `cursor-pointer h-2 w-2 rounded-full transition-all duration-300 ${currentSlideIndex === index ? 'bg-white scale-125' : 'bg-white/50'}`;
+                        dot.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            currentSlideIndex = index;
+                            updateSlider();
+                        });
+                        dotsContainer.appendChild(dot);
+                    });
+                } else {
+                    sliderNav.classList.add('hidden');
+                }
+            };
+            
+            // --- Обработчики событий ---
+            modalCloseButton.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', closeModal);
+            modalContent.addEventListener('click', e => e.stopPropagation()); // Не закрывать при клике на контент
+            
+            document.getElementById('modal-prev-button').addEventListener('click', e => {
+                e.stopPropagation();
+                const gallerySize = currentEvent.gallery.length;
+                currentSlideIndex = (currentSlideIndex - 1 + gallerySize) % gallerySize;
+                updateSlider();
+            });
+
+            document.getElementById('modal-next-button').addEventListener('click', e => {
+                e.stopPropagation();
+                const gallerySize = currentEvent.gallery.length;
+                currentSlideIndex = (currentSlideIndex + 1) % gallerySize;
+                updateSlider();
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if(e.key === 'Escape' && modalOverlay.classList.contains('active')){
+                    closeModal();
+                }
+            });
+
+            // --- Инициализация ---
+            renderEventsPage();
+        });
     </script>
 </body>
 </html>
