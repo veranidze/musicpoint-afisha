@@ -89,7 +89,6 @@
             height: 100vh;
             max-height: 100vh;
           }
-          /* Для iOS Safari — поддержка 100dvh */
           @supports (height: 100dvh) {
             .mobile-full-bg {
               min-height: 100dvh;
@@ -104,7 +103,7 @@
     <!-- Фоновые слои вне основного контейнера -->
     <div class="fixed inset-0 z-0 pointer-events-none">
         <div 
-            class="w-full h-full absolute inset-0 bg-contain bg-center bg-no-repeat mobile-full-bg"
+            class="w-full h-full absolute inset-0 bg-cover bg-center bg-no-repeat mobile-full-bg"
             style="background-image: url('back4.jpg'); z-index: 0;">
         </div>
         <div 
