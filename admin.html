@@ -82,13 +82,29 @@
         .slide-animate {
             animation: slideFade 0.5s ease-in-out;
         }
+
+        @media (max-width: 640px) {
+          .mobile-full-bg {
+            min-height: 100vh;
+            height: 100vh;
+            max-height: 100vh;
+          }
+          /* Для iOS Safari — поддержка 100dvh */
+          @supports (height: 100dvh) {
+            .mobile-full-bg {
+              min-height: 100dvh;
+              height: 100dvh;
+              max-height: 100dvh;
+            }
+          }
+        }
     </style>
 </head>
 <body>
     <!-- Фоновые слои вне основного контейнера -->
     <div class="fixed inset-0 z-0 pointer-events-none">
         <div 
-            class="w-full h-full absolute inset-0 bg-cover bg-center bg-no-repeat"
+            class="w-full h-full absolute inset-0 bg-contain bg-center bg-no-repeat mobile-full-bg"
             style="background-image: url('back4.jpg'); z-index: 0;">
         </div>
         <div 
@@ -311,7 +327,7 @@
             const truncateText = (text, maxLength) => {
                 if (text.length <= maxLength) return text;
                 const trimmedString = text.substring(0, maxLength);
-                return trimmedString.substring(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" "))) + '...';
+                return trimmedString.substring(0, Math.min(trimненedString.length, trimmedString.lastIndexOf(" "))) + '...';
             };
 
             // --- Логика модального окна ---
