@@ -4,126 +4,402 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Point - Афиша</title>
+    
+    <!-- Подключаем Tailwind CSS для стилей -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Подключаем иконки (для красоты) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Шрифты Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #e5e7eb; overflow-x: hidden; }
-        body.modal-open { overflow: hidden; }
-        .animated-gradient { background: linear-gradient(-45deg, #111827, #1f2937, #374151, #4b5563); background-size: 400% 400%; animation: gradient 15s ease infinite; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-        @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .glass-effect { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .loader { border: 4px solid #4b5563; border-top: 4px solid #a5b4fc; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .modal-overlay { display: none; }
-        .modal-overlay.active { display: flex; }
+        /* Базовые стили и анимированный фон */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+            overflow-x: hidden;
+        }
+        body.modal-open {
+            overflow: hidden; /* Запрещаем прокрутку фона, когда открыто модальное окно */
+        }
+
+        .animated-gradient {
+            background: linear-gradient(-45deg, #111827, #1f2937, #374151, #4b5563);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Стиль для эффекта "стекла" */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Анимации для модального окна */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 0.5; }
+        }
+        @keyframes slideInUp {
+            from { transform: translateY(30px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .modal-overlay {
+            display: none; /* Модальное окно скрыто по умолчанию */
+        }
+        .modal-overlay.active {
+            display: flex; /* Показываем, когда активен */
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content {
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        /* Анимация для смены слайдов */
+        @keyframes slideFade {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+        .slide-animate {
+            animation: slideFade 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
-    <div class="animated-gradient"></div>
+    <!-- Фоновые слои вне основного контейнера -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div 
+            class="w-full h-full absolute inset-0 bg-contain bg-center bg-no-repeat"
+            style="background-image: url('back4.jpg'); z-index: 0;">
+        </div>
+        <div 
+            class="w-full h-full absolute inset-0 bg-black"
+            style="z-index: 1; opacity: 0.75;">
+        </div>
+    </div>
+    <div class="animated-gradient pointer-events-none"></div>
+    <!-- Контент теперь обычный, скроллируемый -->
     <div class="relative z-10 container mx-auto px-4">
         <header class="text-center py-16 px-4 flex flex-col items-center">
-            <img src="https://placehold.co/128x128/ffffff/9333ea?text=MP" alt="Music Point Logo" class="w-32 h-32 mb-6 rounded-full shadow-lg border-4 border-white/20 bg-white/10 object-contain" />
+            <img src="logo-music-point.png" alt="Music Point Logo" class="w-32 h-32 mb-6 rounded-full shadow-lg border-4 border-white/20 bg-white/10 object-contain" />
             <h1 class="text-3xl font-bold text-white mb-2">Концертный зал «Магнолия»</h1>
             <p class="text-lg text-indigo-300 mb-2">ул. Шерифа Химшиашвили 4</p>
         </header>
         <main>
+            <!-- Контейнер для карточек событий будет заполнен с помощью JavaScript -->
             <div id="event-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                <div class="col-span-full flex justify-center py-10"><div class="loader"></div></div>
+            </div>
+            <div class="flex justify-center mt-8">
+                <button id="show-more-btn" class="bg-gray-800 text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-700 transition-colors duration-300">
+                    Более ранние
+                </button>
             </div>
         </main>
         <footer class="text-center py-10 mt-16 border-t border-gray-700">
             <p class="text-gray-400">&copy; 2025 Music Point. Все права защищены.</p>
+            <p class="text-gray-500 text-sm">г. Город, ул. Музыкальная, д. 1</p>
         </footer>
     </div>
     
+    <!-- HTML-структура для модального окна -->
     <div id="modal-overlay" class="modal-overlay fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 p-4">
-        <div id="modal-content" class="glass-effect w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-y-auto">
+        <div id="modal-content" class="modal-content glass-effect w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-y-auto">
             <div class="relative h-96 w-full flex-shrink-0">
                 <img id="modal-image" class="w-full h-full object-cover" src="" alt="" />
-                <button id="modal-close-button" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center text-2xl hover:bg-opacity-75 z-20">&times;</button>
+                <button id="modal-close-button" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center text-2xl hover:bg-opacity-75 transition-opacity z-20">&times;</button>
+                
+                <div id="modal-slider-nav" class="hidden">
+                    <button id="modal-prev-button" class="absolute top-1/2 left-4 -translate-y-1/2 text-white bg-black bg-opacity-40 rounded-full w-10 h-10 flex items-center justify-center text-xl hover:bg-opacity-60 transition-all z-20">
+                        &#10094;
+                    </button>
+                    <button id="modal-next-button" class="absolute top-1/2 right-4 -translate-y-1/2 text-white bg-black bg-opacity-40 rounded-full w-10 h-10 flex items-center justify-center text-xl hover:bg-opacity-60 transition-all z-20">
+                        &#10095;
+                    </button>
+                    <div id="modal-dots-container" class="absolute bottom-4 w-full flex justify-center space-x-2 z-20">
+                    </div>
+                </div>
             </div>
+
             <div class="p-8">
                 <h2 id="modal-title" class="text-4xl font-bold text-white mb-4"></h2>
                 <p id="modal-description" class="text-gray-300 mb-8"></p>
+
+                <h3 class="text-2xl font-bold text-white mb-4">Связаться</h3>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <a id="modal-telegram" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"><i class="fab fa-telegram-plane mr-2"></i> Telegram</a>
+                    <a id="modal-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"><i class="fab fa-whatsapp mr-2"></i> WhatsApp</a>
+                    <a id="modal-instagram" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors flex items-center justify-center"><i class="fab fa-instagram mr-2"></i> Instagram</a>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const API_BASE_URL = 'http://16.170.141.43:3000';
+            // --- Данные ---
+            const mockEvents = [
+                // Более ранние события (добавьте свои реальные данные при необходимости)
+                {
+                    id: 5,
+                    title: 'Spring Jazz Evening',
+                    genre: 'Jazz',
+                    date: '10 мая 2025',
+                    time: '19:00',
+                    imageUrl: 'https://placehold.co/600x400/2563eb/ffffff?text=Spring+Jazz+Evening&font=inter',
+                    fullDescription: 'Вечер живого джаза с участием лучших музыкантов города. Насладитесь атмосферой весны и отличной музыкой!',
+                    gallery: [
+                        'https://placehold.co/800x600/2563eb/ffffff?text=Gallery+1&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 6,
+                    title: 'Rock Legends Tribute',
+                    genre: 'Rock',
+                    date: '15 апреля 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/ef4444/ffffff?text=Rock+Legends+Tribute&font=inter',
+                    fullDescription: 'Трибьют-шоу легендарных рок-групп. Лучшие хиты прошлого в исполнении молодых талантов.',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 7,
+                    title: 'Весенний акустический вечер',
+                    genre: 'Acoustic',
+                    date: '28 марта 2025',
+                    time: '18:30',
+                    imageUrl: 'https://placehold.co/600x400/22d3ee/ffffff?text=Весенний+акустический+вечер&font=inter',
+                    fullDescription: 'Тёплый акустический концерт с авторскими песнями и уютной атмосферой.',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                // Основные 4 события
+                {
+                    id: 1,
+                    title: 'The Cosmic Keys: An Interstellar Journey Through Sound',
+                    genre: 'Psychedelic Rock',
+                    date: '30 июля 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/9333ea/ffffff?text=The+Cosmic+Keys&font=inter',
+                    fullDescription: 'The Cosmic Keys - это квартет, исследующий границы современного рока. На этом концерте вы услышите как новые композиции, так и проверенные временем хиты. Специальные визуальные эффекты, созданные в реальном времени, превратят выступление в незабываемый аудиовизуальный опыт. Не пропустите главное музыкальное событие лета!',
+                    gallery: [
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+1&font=inter',
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+2&font=inter',
+                        'https://placehold.co/800x600/9333ea/ffffff?text=Gallery+3&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 2,
+                    title: 'Acoustic Echoes',
+                    genre: 'Unplugged Night',
+                    date: '15 августа 2025',
+                    time: '21:00',
+                    imageUrl: 'https://placehold.co/600x400/10b981/ffffff?text=Acoustic+Echoes&font=inter',
+                    fullDescription: 'Acoustic Echoes - это серия уникальных концертов, где нет места фонограммам и спецэффектам. Только голос, гитара и ваши эмоции. В программе вечера - известные баллады, авторские песни и неожиданные кавер-версии. Уютная атмосфера и живое общение с артистами гарантированы.',
+                    gallery: [
+                        'https://placehold.co/800x600/10b981/ffffff?text=Gallery+1&font=inter',
+                        'https://placehold.co/800x600/10b981/ffffff?text=Gallery+2&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 3,
+                    title: 'Synthwave Surfers',
+                    genre: 'Retro Future Tour',
+                    date: '2 сентября 2025',
+                    time: '22:00',
+                    imageUrl: 'https://placehold.co/600x400/ec4899/ffffff?text=Synthwave+Surfers&font=inter',
+                    fullDescription: 'Synthwave Surfers возвращаются с новым шоу в рамках своего тура "Retro Future". Вас ждут все главные хиты, а также треки с грядущего альбома. Лазерное шоу, дым-машины и атмосфера культовых фильмов прошлого перенесут вас в другую реальность. Дресс-код в стиле 80-х приветствуется!',
+                    gallery: [],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                },
+                {
+                    id: 4,
+                    title: 'Джазовые импровизации',
+                    genre: 'Modern Jazz',
+                    date: '20 сентября 2025',
+                    time: '20:00',
+                    imageUrl: 'https://placehold.co/600x400/f59e0b/ffffff?text=Джаз&font=inter',
+                    fullDescription: 'Каждый вечер джазовых импровизаций уникален. Музыканты встречаются на сцене, чтобы создать музыку здесь и сейчас, без репетиций и партитур. Это чистый диалог инструментов и душ, полный страсти и мастерства. В составе - звезды местной джазовой сцены. Приходите, чтобы стать свидетелем рождения музыки.',
+                    gallery: [
+                        'https://placehold.co/800x600/f59e0b/ffffff?text=Gallery+1&font=inter'
+                    ],
+                    socials: { telegram: '#', whatsapp: '#', instagram: '#' }
+                }
+            ];
+
+            // --- Сортировка событий по дате (от новых к старым) ---
+            function parseDate(str) {
+                const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+                const [day, month, year] = str.split(' ');
+                return new Date(+year, months.indexOf(month), +day);
+            }
+            mockEvents.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+
+            // --- Пагинация ---
+            const EVENTS_PER_PAGE = 4;
+            let currentPage = 1;
+
             const eventListContainer = document.getElementById('event-list');
+            const showMoreBtn = document.getElementById('show-more-btn');
             const modalOverlay = document.getElementById('modal-overlay');
             const modalCloseButton = document.getElementById('modal-close-button');
             const modalContent = document.getElementById('modal-content');
 
-            async function fetchAndRenderEvents() {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/events`);
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    const events = await response.json();
-                    renderEvents(events);
-                } catch (error) {
-                    console.error('Failed to fetch events:', error);
-                    eventListContainer.innerHTML = `<div class="col-span-full text-center text-red-400">Не удалось загрузить события.</div>`;
-                }
-            }
-            
-            function renderEvents(events) {
+            function renderEventsPage() {
                 eventListContainer.innerHTML = '';
-                if (!events.length) {
-                    eventListContainer.innerHTML = `<div class="col-span-full text-center text-gray-400">Событий не найдено.</div>`;
-                    return;
-                }
-
-                events.forEach(event => {
+                const eventsToShow = mockEvents.slice(0, currentPage * EVENTS_PER_PAGE);
+                eventsToShow.forEach(event => {
                     const card = document.createElement('div');
                     card.className = 'glass-effect rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-2 transition-transform duration-300 ease-in-out group flex flex-col';
-                    const imageUrl = event.gallery && event.gallery.length > 0 ? `${API_BASE_URL}${event.gallery[0]}` : 'https://placehold.co/600x400/9333ea/ffffff?text=Event';
-                    
                     card.innerHTML = `
                         <div class="relative">
-                            <img class="w-full h-56 object-cover" src="${imageUrl}" alt="Афиша для ${event.title}" />
+                            <img class="w-full h-56 object-cover" src="${event.imageUrl}" alt="Афиша для ${event.title}" />
                             <div class="absolute top-0 right-0 bg-black bg-opacity-50 text-white text-sm font-bold px-3 py-1 m-2 rounded-full">${event.genre}</div>
                         </div>
                         <div class="p-6 flex flex-col flex-grow">
                             <h3 class="text-2xl font-bold text-white mb-2">${event.title}</h3>
                             <div class="flex items-center text-indigo-300 mb-2">
                                 <i class="far fa-calendar-alt mr-2"></i>
-                                <p>${new Date(event.date).toLocaleDateString('ru-RU')} / ${event.time}</p>
+                                <p>${event.date} / ${event.time}</p>
                             </div>
-                            <p class="text-gray-400 text-sm mb-4 flex-grow">${event.fullDescription.substring(0, 110)}...</p>
-                            <button class="details-button w-full mt-auto bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700">Подробнее</button>
+                            <p class="text-gray-400 text-sm mb-4 flex-grow h-20">${truncateText(event.fullDescription, 110)}</p>
+                            <button class="details-button w-full mt-auto bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-300 transform group-hover:scale-105">
+                                Подробнее
+                            </button>
                         </div>
                     `;
                     card.querySelector('.details-button').addEventListener('click', () => openModal(event));
                     eventListContainer.appendChild(card);
                 });
+
+                // Показывать/скрывать кнопку
+                if (mockEvents.length > currentPage * EVENTS_PER_PAGE) {
+                    showMoreBtn.style.display = 'block';
+                } else {
+                    showMoreBtn.style.display = 'none';
+                }
             }
 
-            function openModal(event) {
-                const imageUrl = event.gallery && event.gallery.length > 0 ? `${API_BASE_URL}${event.gallery[0]}` : '';
-                document.getElementById('modal-image').src = imageUrl;
-                document.getElementById('modal-title').textContent = event.title;
-                document.getElementById('modal-description').textContent = event.fullDescription;
-                modalOverlay.style.display = 'flex';
-                document.body.classList.add('modal-open');
-            }
-
-            function closeModal() {
-                modalOverlay.style.display = 'none';
-                document.body.classList.remove('modal-open');
-            }
-
-            modalCloseButton.addEventListener('click', closeModal);
-            modalOverlay.addEventListener('click', (e) => {
-                if (e.target === modalOverlay) closeModal();
+            showMoreBtn.addEventListener('click', () => {
+                currentPage++;
+                renderEventsPage();
             });
 
-            fetchAndRenderEvents();
+            // --- Вспомогательные функции ---
+            const truncateText = (text, maxLength) => {
+                if (text.length <= maxLength) return text;
+                const trimmedString = text.substring(0, maxLength);
+                return trimmedString.substring(0, Math.min(trimmedString.length, trimmedString.lastIndexOf(" "))) + '...';
+            };
+
+            // --- Логика модального окна ---
+            let currentEvent = null;
+            let currentSlideIndex = 0;
+
+            const openModal = (event) => {
+                currentEvent = event;
+                currentSlideIndex = 0;
+                
+                // Заполнение контента
+                document.getElementById('modal-title').textContent = event.title;
+                document.getElementById('modal-description').textContent = event.fullDescription;
+                document.getElementById('modal-telegram').href = event.socials.telegram;
+                document.getElementById('modal-whatsapp').href = event.socials.whatsapp;
+                document.getElementById('modal-instagram').href = event.socials.instagram;
+
+                updateSlider();
+
+                // Показываем окно
+                modalOverlay.classList.add('active');
+                document.body.classList.add('modal-open');
+            };
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            };
+
+            const updateSlider = () => {
+                const hasGallery = currentEvent.gallery && currentEvent.gallery.length > 0;
+                const canSlide = hasGallery && currentEvent.gallery.length > 1;
+
+                const imageToShow = hasGallery ? currentEvent.gallery[currentSlideIndex] : currentEvent.imageUrl;
+                const modalImage = document.getElementById('modal-image');
+                modalImage.src = imageToShow;
+                modalImage.classList.add('slide-animate');
+                modalImage.addEventListener('animationend', () => modalImage.classList.remove('slide-animate'), {once: true});
+
+
+                const sliderNav = document.getElementById('modal-slider-nav');
+                const dotsContainer = document.getElementById('modal-dots-container');
+                
+                if(canSlide) {
+                    sliderNav.classList.remove('hidden');
+                    dotsContainer.innerHTML = '';
+                    currentEvent.gallery.forEach((_, index) => {
+                        const dot = document.createElement('div');
+                        dot.className = `cursor-pointer h-2 w-2 rounded-full transition-all duration-300 ${currentSlideIndex === index ? 'bg-white scale-125' : 'bg-white/50'}`;
+                        dot.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            currentSlideIndex = index;
+                            updateSlider();
+                        });
+                        dotsContainer.appendChild(dot);
+                    });
+                } else {
+                    sliderNav.classList.add('hidden');
+                }
+            };
+            
+            // --- Обработчики событий ---
+            modalCloseButton.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', closeModal);
+            modalContent.addEventListener('click', e => e.stopPropagation()); // Не закрывать при клике на контент
+            
+            document.getElementById('modal-prev-button').addEventListener('click', e => {
+                e.stopPropagation();
+                const gallerySize = currentEvent.gallery.length;
+                currentSlideIndex = (currentSlideIndex - 1 + gallerySize) % gallerySize;
+                updateSlider();
+            });
+
+            document.getElementById('modal-next-button').addEventListener('click', e => {
+                e.stopPropagation();
+                const gallerySize = currentEvent.gallery.length;
+                currentSlideIndex = (currentSlideIndex + 1) % gallerySize;
+                updateSlider();
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if(e.key === 'Escape' && modalOverlay.classList.contains('active')){
+                    closeModal();
+                }
+            });
+
+            // --- Инициализация ---
+            renderEventsPage();
         });
     </script>
 </body>
